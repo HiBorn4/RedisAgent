@@ -13,14 +13,14 @@
 [![Redis](https://img.shields.io/badge/Redis-7.x-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.35-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)](https://streamlit.io)
 [![Gemini](https://img.shields.io/badge/Gemini-2.5_Pro-1a73e8?style=for-the-badge&logo=google&logoColor=white)](https://deepmind.google/technologies/gemini/)
-[![CI](https://img.shields.io/github/actions/workflow/status/YOUR_USERNAME/redis-mcp-agent/ci.yml?branch=main&style=for-the-badge&label=CI)](https://github.com/YOUR_USERNAME/redis-mcp-agent/actions)
+[![CI](https://img.shields.io/github/actions/workflow/status/hiborn4/RedisAgent/ci.yml?branch=main&style=for-the-badge&label=CI)](https://github.com/hiborn4/RedisAgent/actions)
 
 > **Ask questions in plain English. Get answers from Redis.**  
 > RedisAgent combines Google's Agent Development Kit, the Model Context Protocol, and Gemini 2.5 Pro into a fully agentic pipeline — no SQL, no scripts, just a chat box.
 
 ---
 
-[**Live Demo**](#-demo) · [**Architecture**](#-architecture) · [**Quick Start**](#-quick-start) · [**API Reference**](#-api-reference) · [**Landing Page**](https://YOUR_USERNAME.github.io/redis-mcp-agent/)
+[**Live Demo**](#-demo) · [**Architecture**](#-architecture) · [**Quick Start**](#-quick-start) · [**API Reference**](#-api-reference) · [**Landing Page**](https://hiborn4.github.io/RedisAgent/)
 
 </div>
 
@@ -139,7 +139,7 @@ User: "What is the trip status?"
 ## 📁 Project Structure
 
 ```
-redis-mcp-agent/
+RedisAgent/
 │
 ├── backend/                    # FastAPI + ADK + MCP server
 │   ├── main.py                 # FastAPI app, ADK runner, /chat & /health endpoints
@@ -180,8 +180,8 @@ redis-mcp-agent/
 ### 1. Clone & configure
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/redis-mcp-agent.git
-cd redis-mcp-agent
+git clone https://github.com/hiborn4/RedisAgent.git
+cd RedisAgent
 
 cp .env.example .env
 # Edit .env — set REDIS_URL and GOOGLE_API_KEY
