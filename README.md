@@ -390,7 +390,7 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 <div align="center">
 
-Built by **[Your Name]** · [LinkedIn](https://linkedin.com/in/yourprofile) · [Portfolio](https://yourwebsite.com)
+Built by **Hi Born** · [LinkedIn](https://linkedin.com/in/aryan-shirke) · [Portfolio](https://aryanshirke.me)
 
 *If this project helped you, a ⭐ on GitHub is always appreciated!*
 
