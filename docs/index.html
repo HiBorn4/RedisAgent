@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RedisAgent — Conversational AI for Redis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,500;0,9..40,700;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #060610;
+    --surface:   #0d0d1f;
+    --surface2:  #141428;
+    --border:    #1e1e3a;
+    --red:       #e11d48;
+    --red-dark:  #9f1239;
+    --red-muted: rgba(225,29,72,0.12);
+    --red-glow:  rgba(225,29,72,0.25);
+    --purple:    #7c3aed;
+    --text:      #e2e8f0;
+    --muted:     #64748b;
+    --faint:     #1e293b;
+    --mono:      'Space Mono', monospace;
+    --sans:      'DM Sans', sans-serif;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1rem 3rem;
+    background: rgba(6,6,16,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-logo {
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: #fff;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .nav-logo span { color: var(--red); }
+  .nav-links { display: flex; gap: 2rem; list-style: none; }
+  .nav-links a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.88rem;
+    font-weight: 500;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--text); }
+  .nav-cta {
+    background: var(--red);
+    color: #fff !important;
+    padding: 0.4rem 1.2rem;
+    border-radius: 6px;
+    font-weight: 700 !important;
+    transition: background 0.2s, box-shadow 0.2s !important;
+  }
+  .nav-cta:hover {
+    background: #f43f5e !important;
+    box-shadow: 0 0 20px var(--red-glow) !important;
+    color: #fff !important;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center;
+    padding: 8rem 2rem 4rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 80% 50% at 50% 0%, rgba(225,29,72,0.08) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 40% at 80% 60%, rgba(124,58,237,0.05) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  /* animated grid */
+  .hero-grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+    background-size: 80px 80px;
+    pointer-events: none;
+    mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 100%);
+  }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--red);
+    border: 1px solid rgba(225,29,72,0.3);
+    background: var(--red-muted);
+    padding: 0.3rem 1rem;
+    border-radius: 999px;
+    margin-bottom: 1.5rem;
+    display: inline-block;
+  }
+
+  h1 {
+    font-family: var(--mono);
+    font-size: clamp(3rem, 8vw, 6.5rem);
+    font-weight: 700;
+    line-height: 0.95;
+    letter-spacing: -0.03em;
+    margin-bottom: 1.5rem;
+  }
+  h1 .highlight {
+    background: linear-gradient(135deg, #fff 30%, var(--red) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  h1 .dim { color: var(--muted); -webkit-text-fill-color: var(--muted); }
+
+  .hero-sub {
+    font-size: 1.1rem;
+    color: var(--muted);
+    max-width: 560px;
+    margin: 0 auto 2.5rem;
+    font-weight: 300;
+    line-height: 1.7;
+  }
+
+  .hero-actions {
+    display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;
+    margin-bottom: 4rem;
+  }
+  .btn {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    padding: 0.7rem 1.8rem;
+    border-radius: 8px;
+    font-weight: 700; font-size: 0.9rem;
+    text-decoration: none;
+    transition: all 0.2s;
+    cursor: pointer; border: none;
+  }
+  .btn-primary {
+    background: var(--red);
+    color: #fff;
+  }
+  .btn-primary:hover { background: #f43f5e; box-shadow: 0 0 30px var(--red-glow); transform: translateY(-2px); }
+  .btn-ghost {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { border-color: var(--muted); background: var(--surface2); transform: translateY(-2px); }
+
+  /* ── TERMINAL PREVIEW ── */
+  .terminal-wrap {
+    width: 100%; max-width: 760px;
+    position: relative;
+  }
+  .terminal-glow {
+    position: absolute; inset: -40px;
+    background: radial-gradient(ellipse 70% 60% at 50% 50%, rgba(225,29,72,0.07), transparent);
+    pointer-events: none;
+  }
+  .terminal {
+    background: #080814;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    text-align: left;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04);
+    position: relative;
+  }
+  .terminal-bar {
+    background: #0f0f23;
+    padding: 0.75rem 1rem;
+    display: flex; align-items: center; gap: 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot-r { background: #ef4444; }
+  .dot-y { background: #f59e0b; }
+  .dot-g { background: #22c55e; }
+  .terminal-title {
+    flex: 1; text-align: center;
+    font-family: var(--mono); font-size: 0.72rem;
+    color: var(--muted);
+  }
+  .terminal-body {
+    padding: 1.5rem;
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    line-height: 1.9;
+  }
+  .t-prompt { color: var(--red); }
+  .t-cmd { color: #e2e8f0; }
+  .t-ok { color: #22c55e; }
+  .t-dim { color: #475569; }
+  .t-ans { color: #fda4af; }
+  .t-key { color: #93c5fd; }
+  .t-cursor {
+    display: inline-block;
+    width: 8px; height: 14px;
+    background: var(--red);
+    vertical-align: middle;
+    margin-left: 2px;
+    animation: blink 1.1s step-end infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+  /* ── BADGES STRIP ── */
+  .badges-strip {
+    padding: 1.5rem 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    gap: 2.5rem; flex-wrap: wrap;
+    background: var(--surface);
+  }
+  .badge-item {
+    display: flex; align-items: center; gap: 0.5rem;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+  }
+  .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--red); }
+
+  /* ── SECTIONS ── */
+  section { padding: 6rem 2rem; max-width: 1100px; margin: 0 auto; }
+
+  h2 {
+    font-family: var(--mono);
+    font-size: clamp(1.8rem, 4vw, 2.8rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 1rem;
+  }
+  .section-label {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--red);
+    margin-bottom: 0.75rem;
+    display: block;
+  }
+  .section-sub {
+    color: var(--muted);
+    font-size: 1rem;
+    max-width: 560px;
+    margin-bottom: 3.5rem;
+    font-weight: 300;
+  }
+
+  /* ── HOW IT WORKS ── */
+  .steps {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.5rem;
+  }
+  .step {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    position: relative;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .step:hover { border-color: rgba(225,29,72,0.4); transform: translateY(-3px); }
+  .step-num {
+    font-family: var(--mono);
+    font-size: 2rem;
+    font-weight: 700;
+    color: rgba(225,29,72,0.2);
+    line-height: 1;
+    margin-bottom: 1rem;
+  }
+  .step h3 { font-size: 0.95rem; font-weight: 700; margin-bottom: 0.5rem; color: #f1f5f9; }
+  .step p { font-size: 0.85rem; color: var(--muted); line-height: 1.6; }
+  .step-tag {
+    display: inline-block;
+    margin-top: 0.75rem;
+    background: var(--red-muted);
+    border: 1px solid rgba(225,29,72,0.25);
+    color: #fda4af;
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+  }
+
+  /* ── FEATURES GRID ── */
+  .features {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1rem;
+  }
+  .feature {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.25rem 1.5rem;
+    display: flex; gap: 1rem; align-items: flex-start;
+    transition: border-color 0.2s;
+  }
+  .feature:hover { border-color: var(--faint); }
+  .feature-icon {
+    font-size: 1.4rem;
+    flex-shrink: 0;
+    width: 2.2rem; height: 2.2rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    display: grid; place-items: center;
+  }
+  .feature h3 { font-size: 0.9rem; font-weight: 700; margin-bottom: 0.3rem; }
+  .feature p { font-size: 0.82rem; color: var(--muted); line-height: 1.55; }
+
+  /* ── ARCH DIAGRAM ── */
+  .arch-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 2rem;
+    overflow-x: auto;
+  }
+  .arch-box pre {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    line-height: 1.7;
+    color: #94a3b8;
+    white-space: pre;
+  }
+  .arch-box .arch-red { color: var(--red); }
+  .arch-box .arch-grn { color: #22c55e; }
+  .arch-box .arch-blu { color: #60a5fa; }
+
+  /* ── STACK ── */
+  .stack-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1rem;
+  }
+  .stack-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.25rem;
+    text-align: center;
+    transition: transform 0.2s, border-color 0.2s;
+  }
+  .stack-card:hover { transform: translateY(-3px); border-color: rgba(225,29,72,0.35); }
+  .stack-emoji { font-size: 1.8rem; margin-bottom: 0.5rem; }
+  .stack-name { font-family: var(--mono); font-size: 0.82rem; font-weight: 700; color: #f1f5f9; }
+  .stack-role { font-size: 0.74rem; color: var(--muted); margin-top: 0.2rem; }
+
+  /* ── QUICKSTART ── */
+  .qs-steps { display: flex; flex-direction: column; gap: 1rem; }
+  .qs-step {
+    display: flex; gap: 1rem; align-items: flex-start;
+  }
+  .qs-num {
+    font-family: var(--mono);
+    font-size: 0.8rem; font-weight: 700;
+    background: var(--red);
+    color: #fff;
+    width: 2rem; height: 2rem;
+    border-radius: 50%;
+    display: grid; place-items: center;
+    flex-shrink: 0;
+    margin-top: 0.15rem;
+  }
+  .qs-body { flex: 1; }
+  .qs-title { font-weight: 700; margin-bottom: 0.4rem; color: #f1f5f9; }
+  code, .code-block {
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    background: #0a0a1a;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    display: block;
+    color: #94a3b8;
+    line-height: 1.7;
+    overflow-x: auto;
+    white-space: pre;
+  }
+  .code-inline {
+    display: inline;
+    padding: 0.1em 0.35em;
+    font-size: 0.85em;
+    color: #fda4af;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 2.5rem 3rem;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 1rem;
+    background: var(--surface);
+  }
+  .footer-logo { font-family: var(--mono); font-weight: 700; color: #fff; font-size: 1rem; }
+  .footer-logo span { color: var(--red); }
+  footer p { font-size: 0.82rem; color: var(--muted); }
+  footer a { color: var(--muted); text-decoration: none; }
+  footer a:hover { color: var(--text); }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 640px) {
+    nav { padding: 1rem 1.25rem; }
+    .nav-links { display: none; }
+    .hero { padding: 7rem 1.25rem 3rem; }
+    section { padding: 4rem 1.25rem; }
+    footer { flex-direction: column; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── NAV ── -->
+<nav>
+  <div class="nav-logo"><span>●</span> RedisAgent</div>
+  <ul class="nav-links">
+    <li><a href="#how">How It Works</a></li>
+    <li><a href="#features">Features</a></li>
+    <li><a href="#stack">Stack</a></li>
+    <li><a href="#quickstart">Quick Start</a></li>
+    <li><a href="https://github.com/YOUR_USERNAME/redis-mcp-agent" class="nav-cta" target="_blank">GitHub ↗</a></li>
+  </ul>
+</nav>
+
+<!-- ── HERO ── -->
+<div class="hero">
+  <div class="hero-grid"></div>
+  <div class="eyebrow">Google ADK + MCP + Gemini 2.5 Pro</div>
+  <h1>
+    <span class="dim">Query</span> <span class="highlight">Redis</span><br>
+    <span class="dim">with</span> <span class="highlight">plain English</span>
+  </h1>
+  <p class="hero-sub">
+    RedisAgent is an agentic AI pipeline that wraps your Redis instance behind a conversational interface — no CLI, no scripts, just a chat box.
+  </p>
+  <div class="hero-actions">
+    <a href="#quickstart" class="btn btn-primary">⚡ Get Started</a>
+    <a href="https://github.com/YOUR_USERNAME/redis-mcp-agent" class="btn btn-ghost" target="_blank">View on GitHub</a>
+  </div>
+
+  <!-- Terminal preview -->
+  <div class="terminal-wrap">
+    <div class="terminal-glow"></div>
+    <div class="terminal">
+      <div class="terminal-bar">
+        <div class="dot dot-r"></div>
+        <div class="dot dot-y"></div>
+        <div class="dot dot-g"></div>
+        <div class="terminal-title">RedisAgent · Chat</div>
+      </div>
+      <div class="terminal-body">
+<span class="t-dim">You ──────────────────────────────────────────</span>
+<span class="t-cmd">  What is the current trip status?</span>
+
+<span class="t-dim">Agent ────────────────────────────────────────</span>
+<span class="t-ok">  [1] list_keys("*") → 3 keys found</span>
+<span class="t-ok">  [2] search_keys("travel_data_*") → matched</span>
+<span class="t-key">  [3] get_key("travel_data_..._session_state.json")</span>
+<span class="t-ok">  [4] parse JSON → field "trip_status" extracted</span>
+
+<span class="t-ans">  Trip 2200118440 status is <strong>APPROVED</strong>.</span>
+<span class="t-ans">  Departure: Mumbai → Delhi, 14 Nov 2025.</span>
+
+<span class="t-dim">You ──────────────────────────────────────────</span>
+<span class="t-cmd">  List all available keys<span class="t-cursor"></span></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── BADGES ── -->
+<div class="badges-strip">
+  <div class="badge-item"><div class="badge-dot"></div> Google ADK</div>
+  <div class="badge-item"><div class="badge-dot"></div> Model Context Protocol</div>
+  <div class="badge-item"><div class="badge-dot"></div> Gemini 2.5 Pro</div>
+  <div class="badge-item"><div class="badge-dot"></div> FastAPI</div>
+  <div class="badge-item"><div class="badge-dot"></div> Redis 7.x</div>
+  <div class="badge-item"><div class="badge-dot"></div> Streamlit</div>
+  <div class="badge-item"><div class="badge-dot"></div> Python 3.11+</div>
+</div>
+
+<!-- ── HOW IT WORKS ── -->
+<section id="how">
+  <span class="section-label">// How it works</span>
+  <h2>Agent-driven, not hardcoded</h2>
+  <p class="section-sub">The LLM drives every tool call. No query language, no fixed routes — just reasoning over your live Redis instance.</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">01</div>
+      <h3>You ask a question</h3>
+      <p>Type any question about your Redis data in plain English. The Streamlit UI sends it to the FastAPI backend.</p>
+      <span class="step-tag">POST /chat</span>
+    </div>
+    <div class="step">
+      <div class="step-num">02</div>
+      <h3>ADK invokes the agent</h3>
+      <p>Google ADK's <code style="display:inline;background:none;border:none;padding:0;color:#fda4af;font-size:0.85em">LlmAgent</code> receives the query with your custom system prompt and decides which MCP tools to call.</p>
+      <span class="step-tag">LlmAgent + Runner</span>
+    </div>
+    <div class="step">
+      <div class="step-num">03</div>
+      <h3>MCP tools hit Redis</h3>
+      <p>The agent chains <code style="display:inline;background:none;border:none;padding:0;color:#fda4af;font-size:0.85em">list_keys → search_keys → get_key</code> autonomously until it finds the answer.</p>
+      <span class="step-tag">MCP stdio</span>
+    </div>
+    <div class="step">
+      <div class="step-num">04</div>
+      <h3>Answer surfaces in chat</h3>
+      <p>The agent parses nested JSON inside Redis values and returns a clean, human-readable answer. Session state persists across turns.</p>
+      <span class="step-tag">SQLite session store</span>
+    </div>
+  </div>
+</section>
+
+<!-- ── FEATURES ── -->
+<section id="features">
+  <span class="section-label">// Features</span>
+  <h2>Everything you'd expect,<br>nothing you don't need</h2>
+  <p class="section-sub">Built lean — every component earns its place.</p>
+
+  <div class="features">
+    <div class="feature">
+      <div class="feature-icon">🗣️</div>
+      <div>
+        <h3>Conversational Redis access</h3>
+        <p>Plain-English queries map to structured Redis lookups automatically. No query syntax to learn.</p>
+      </div>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">🔁</div>
+      <div>
+        <h3>Persistent sessions</h3>
+        <p>ADK's <code class="code-inline">DatabaseSessionService</code> keeps conversation memory across requests via SQLite.</p>
+      </div>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">🔌</div>
+      <div>
+        <h3>MCP stdio transport</h3>
+        <p>Redis tools are exposed as proper MCP primitives — plug-and-play with any MCP-compatible client.</p>
+      </div>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">🔍</div>
+      <div>
+        <h3>Autonomous key discovery</h3>
+        <p>Agent starts blind with <code class="code-inline">list_keys(*)</code> and narrows down using pattern search — no hardcoded key names.</p>
+      </div>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">🧩</div>
+      <div>
+        <h3>Nested JSON reasoning</h3>
+        <p>Values that are JSON strings get automatically parsed and drilled into. The agent finds the exact field requested.</p>
+      </div>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">⚡</div>
+      <div>
+        <h3>FastAPI async backend</h3>
+        <p>Fully async from HTTP layer to Redis calls. Production-ready with health endpoint and structured logging.</p>
+      </div>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">📦</div>
+      <div>
+        <h3>Redis bulk data loader</h3>
+        <p><code class="code-inline">redis_dump.py</code> loads entire directories of JSON files into Redis with one command.</p>
+      </div>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">🐳</div>
+      <div>
+        <h3>Docker ready</h3>
+        <p><code class="code-inline">docker-compose up</code> brings up Redis + backend + frontend in one shot, no manual setup needed.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── ARCH ── -->
+<section>
+  <span class="section-label">// Architecture</span>
+  <h2>The full picture</h2>
+  <p class="section-sub">Four layers. Clean boundaries. Each component replaceable.</p>
+  <div class="arch-box">
+    <pre>
+<span class="arch-red">┌────────────────────────────────────────────────────────────────┐</span>
+<span class="arch-red">│</span>                      <span style="color:#f1f5f9;font-weight:700">RedisAgent System</span>                          <span class="arch-red">│</span>
+<span class="arch-red">│</span>                                                                <span class="arch-red">│</span>
+<span class="arch-red">│</span>  <span class="arch-blu">┌──────────────┐</span>  HTTP /chat   <span class="arch-red">┌─────────────────────────┐</span>  <span class="arch-red">│</span>
+<span class="arch-red">│</span>  <span class="arch-blu">│  Streamlit   │</span> ────────────▶ <span class="arch-red">│   FastAPI  (main.py)    │</span>  <span class="arch-red">│</span>
+<span class="arch-red">│</span>  <span class="arch-blu">│  Chat UI     │</span> ◀──────────── <span class="arch-red">│   Google ADK Runner     │</span>  <span class="arch-red">│</span>
+<span class="arch-red">│</span>  <span class="arch-blu">│  (app.py)    │</span>  JSON resp.  <span class="arch-red">│   LlmAgent (Gemini 2.5) │</span>  <span class="arch-red">│</span>
+<span class="arch-red">│</span>  <span class="arch-blu">└──────────────┘</span>               <span class="arch-red">│   SQLite session store  │</span>  <span class="arch-red">│</span>
+<span class="arch-red">│</span>                                 <span class="arch-red">└────────────┬────────────┘</span>  <span class="arch-red">│</span>
+<span class="arch-red">│</span>                                              <span style="color:#fda4af">│ MCP stdio</span>       <span class="arch-red">│</span>
+<span class="arch-red">│</span>                                              ▼                <span class="arch-red">│</span>
+<span class="arch-red">│</span>                                 <span style="color:#a78bfa">┌────────────────────────┐</span>  <span class="arch-red">│</span>
+<span class="arch-red">│</span>                                 <span style="color:#a78bfa">│  Redis MCP (server.py)  │</span>  <span class="arch-red">│</span>
+<span class="arch-red">│</span>                                 <span style="color:#a78bfa">│  • ping_redis()         │</span>  <span class="arch-red">│</span>
+<span class="arch-red">│</span>                                 <span style="color:#a78bfa">│  • list_keys(pattern)   │</span>  <span class="arch-red">│</span>
+<span class="arch-red">│</span>                                 <span style="color:#a78bfa">│  • get_key(key)         │</span>  <span class="arch-red">│</span>
+<span class="arch-red">│</span>                                 <span style="color:#a78bfa">│  • set_key(key,val,ttl) │</span>  <span class="arch-red">│</span>
+<span class="arch-red">│</span>                                 <span style="color:#a78bfa">└────────────┬───────────┘</span>  <span class="arch-red">│</span>
+<span class="arch-red">│</span>                                              <span style="color:#fda4af">│ redis-py</span>        <span class="arch-red">│</span>
+<span class="arch-red">│</span>                                              ▼                <span class="arch-red">│</span>
+<span class="arch-red">│</span>                                 <span class="arch-grn">┌────────────────────────┐</span>  <span class="arch-red">│</span>
+<span class="arch-red">│</span>                                 <span class="arch-grn">│   Redis 7.x Instance   │</span>  <span class="arch-red">│</span>
+<span class="arch-red">│</span>                                 <span class="arch-grn">│   localhost:6379        │</span>  <span class="arch-red">│</span>
+<span class="arch-red">│</span>                                 <span class="arch-grn">└────────────────────────┘</span>  <span class="arch-red">│</span>
+<span class="arch-red">└────────────────────────────────────────────────────────────────┘</span>
+    </pre>
+  </div>
+</section>
+
+<!-- ── STACK ── -->
+<section id="stack">
+  <span class="section-label">// Tech Stack</span>
+  <h2>Built on solid foundations</h2>
+  <p class="section-sub">Modern, well-maintained tools — no exotic dependencies.</p>
+
+  <div class="stack-grid">
+    <div class="stack-card">
+      <div class="stack-emoji">🤖</div>
+      <div class="stack-name">Gemini 2.5 Pro</div>
+      <div class="stack-role">LLM backbone</div>
+    </div>
+    <div class="stack-card">
+      <div class="stack-emoji">🏗️</div>
+      <div class="stack-name">Google ADK</div>
+      <div class="stack-role">Agent framework</div>
+    </div>
+    <div class="stack-card">
+      <div class="stack-emoji">🔌</div>
+      <div class="stack-name">MCP</div>
+      <div class="stack-role">Tool protocol</div>
+    </div>
+    <div class="stack-card">
+      <div class="stack-emoji">⚡</div>
+      <div class="stack-name">FastAPI</div>
+      <div class="stack-role">Async REST API</div>
+    </div>
+    <div class="stack-card">
+      <div class="stack-emoji">🔴</div>
+      <div class="stack-name">Redis 7.x</div>
+      <div class="stack-role">Data store</div>
+    </div>
+    <div class="stack-card">
+      <div class="stack-emoji">🎨</div>
+      <div class="stack-name">Streamlit</div>
+      <div class="stack-role">Chat UI</div>
+    </div>
+    <div class="stack-card">
+      <div class="stack-emoji">💾</div>
+      <div class="stack-name">SQLite</div>
+      <div class="stack-role">Session store</div>
+    </div>
+    <div class="stack-card">
+      <div class="stack-emoji">🐳</div>
+      <div class="stack-name">Docker</div>
+      <div class="stack-role">Containerization</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── QUICKSTART ── -->
+<section id="quickstart">
+  <span class="section-label">// Quick Start</span>
+  <h2>Up in under 5 minutes</h2>
+  <p class="section-sub">One script does it all. Or go step-by-step below.</p>
+
+  <div class="qs-steps">
+    <div class="qs-step">
+      <div class="qs-num">1</div>
+      <div class="qs-body">
+        <div class="qs-title">Clone and configure</div>
+        <code class="code-block">git clone https://github.com/YOUR_USERNAME/redis-mcp-agent.git
+cd redis-mcp-agent
+cp .env.example .env
+# Edit .env — set REDIS_URL and GOOGLE_API_KEY</code>
+      </div>
+    </div>
+    <div class="qs-step">
+      <div class="qs-num">2</div>
+      <div class="qs-body">
+        <div class="qs-title">One-command start (recommended)</div>
+        <code class="code-block">./start.sh</code>
+        <p style="margin-top:0.5rem;font-size:0.82rem;color:var(--muted)">Or use Docker: <span style="font-family:var(--mono);color:#fda4af">docker-compose up</span></p>
+      </div>
+    </div>
+    <div class="qs-step">
+      <div class="qs-num">3</div>
+      <div class="qs-body">
+        <div class="qs-title">Open the chat UI</div>
+        <code class="code-block">http://localhost:8501</code>
+        <p style="margin-top:0.5rem;font-size:0.82rem;color:var(--muted)">Backend health: <span style="font-family:var(--mono);color:#fda4af">http://localhost:8001/health</span></p>
+      </div>
+    </div>
+    <div class="qs-step">
+      <div class="qs-num">4</div>
+      <div class="qs-body">
+        <div class="qs-title">Load data and start querying</div>
+        <code class="code-block"># Drop JSON files into backend/redis_dumps/
+python backend/redis_dump.py
+
+# Then ask the agent:
+# "List all available Redis keys"
+# "What is the trip status?"
+# "Fetch the travel itinerary data"</code>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="footer-logo"><span>●</span> RedisAgent</div>
+  <p>Built by <a href="https://github.com/YOUR_USERNAME" target="_blank">Your Name</a> · MIT License</p>
+  <p><a href="https://github.com/YOUR_USERNAME/redis-mcp-agent" target="_blank">GitHub ↗</a></p>
+</footer>
+
+</body>
+</html>

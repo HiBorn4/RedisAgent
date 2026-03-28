@@ -1,0 +1,94 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-test:
+    name: Lint & Smoke Test
+    runs-on: ubuntu-latest
+
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      # ── Backend ──────────────────────────────────────────────────────────────
+      - name: Install backend dependencies
+        run: |
+          cd backend
+          pip install -r requirements.txt
+          pip install ruff
+
+      - name: Lint backend (ruff)
+        run: |
+          cd backend
+          ruff check . --select E,W,F --ignore E501 || true
+
+      - name: Smoke-test MCP server import
+        run: |
+          cd backend
+          python -c "from mcp.server.fastmcp import FastMCP; print('MCP import OK')"
+
+      - name: Smoke-test Redis connection
+        env:
+          REDIS_URL: redis://localhost:6379/0
+        run: |
+          cd backend
+          python -c "
+          import redis, os
+          r = redis.from_url(os.getenv('REDIS_URL'), decode_responses=True)
+          assert r.ping(), 'Redis ping failed'
+          r.set('ci_test_key', 'hello')
+          assert r.get('ci_test_key') == 'hello'
+          r.delete('ci_test_key')
+          print('Redis round-trip OK')
+          "
+
+      # ── Frontend ─────────────────────────────────────────────────────────────
+      - name: Install frontend dependencies
+        run: |
+          cd frontend
+          pip install -r requirements.txt
+          pip install ruff
+
+      - name: Lint frontend (ruff)
+        run: |
+          cd frontend
+          ruff check app.py --select E,W,F --ignore E501 || true
+
+      - name: Smoke-test Streamlit import
+        run: python -c "import streamlit; print('Streamlit', streamlit.__version__, 'OK')"
+
+  docker-build:
+    name: Docker Build Check
+    runs-on: ubuntu-latest
+    needs: lint-and-test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build backend image
+        run: docker build -t redis-agent-backend ./backend
+
+      - name: Build frontend image
+        run: docker build -t redis-agent-frontend ./frontend
